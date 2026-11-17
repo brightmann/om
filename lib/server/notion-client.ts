@@ -5,7 +5,25 @@ import { NotionAPI } from 'notion-client'
 
 const { NOTION_ACCESS_TOKEN } = process.env
 
-const client = new NotionAPI({ authToken: NOTION_ACCESS_TOKEN })
+// Notion's API blocks got's default User-Agent with HTTP 403; send a browser UA instead
+const BROWSER_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+
+class BrowserNotionAPI extends NotionAPI {
+  override fetch<T> (options: Parameters<NotionAPI['fetch']>[0]): Promise<T> {
+    return super.fetch<T>({
+      ...options,
+      gotOptions: {
+        ...options.gotOptions,
+        headers: {
+          ...options.gotOptions?.headers,
+          'User-Agent': BROWSER_USER_AGENT,
+        },
+      },
+    })
+  }
+}
+
+const client = new BrowserNotionAPI({ authToken: NOTION_ACCESS_TOKEN })
 
 const PROXIED_METHODS = [
   'getPage',
